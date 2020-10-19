@@ -34,12 +34,35 @@ function App() {
 
   const [posts, setPosts] = useState([]);
   const [open, setOpen] = useState(false);
+  const [openSignIn, setOpenSignIn] = useState(false);
   const [modalStyle] = useState(getModalStyle());
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
+  const [user, setUser] = useState(null);
 
   const [registerOpen, setRegisterOpen] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((authUser) => {
+      if (authUser) {
+        console.log(authUser);
+        setUser(authUser);
+
+        if (authUser.displayName) {
+        } else {
+          return authUser.updateProfile({
+            displayName: username,
+          });
+        }
+      } else {
+        setUser(null);
+      }
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [user, username]);
 
   useEffect(() => {
     db.collection("posts").onSnapshot((snapshot) =>
@@ -61,16 +84,20 @@ function App() {
     setRegisterOpen(false);
   };
 
+  const handleLogin = (e) => {
+    e.preventDefault();
+    auth
+      .signInWithEmailAndPassword(email, password)
+      .catch((error) => alert(error.message));
+
+    setOpen(false);
+  };
+
   return (
     <div className="app">
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        aria-labelledby="simple-modal-title"
-        aria-describedby="simple-modal-description"
-      >
+      <Modal open={open} onClose={() => setOpen(false)}>
         <div style={modalStyle} className={classes.paper}>
-          <form className="app__signup">
+          <form className="app__login">
             <center>
               <img
                 className="app__headerImage"
@@ -80,8 +107,34 @@ function App() {
             </center>
 
             <Input
-              placeholder="username"
+              placeholder="email"
               type="text"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Input
+              placeholder="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <Button onClick={handleLogin}>Login</Button>
+          </form>
+        </div>
+      </Modal>{" "}
+      <Modal open={registerOpen} onClose={() => setRegisterOpen(false)}>
+        <div style={modalStyle} className={classes.paper}>
+          <form className="app__login">
+            <center>
+              <img
+                className="app__headerImage"
+                src="https://www.instagram.com/static/images/web/mobile_nav_type_logo.png/735145cfe0a4.png"
+                alt=""
+              />
+            </center>
+            <Input
+              type="text"
+              placeholder="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
@@ -97,7 +150,7 @@ function App() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <Button onClick={handleRegister}>Sign Up</Button>
+            <Button onClick={handleRegister}>Register</Button>
           </form>
         </div>
       </Modal>
@@ -107,9 +160,14 @@ function App() {
           alt=""
         />
       </div>
-
-      <Button onClick={() => setOpen(true)}>Sign up</Button>
-
+      {user ? (
+        <Button onClick={() => auth.signOut()}>Logout</Button>
+      ) : (
+        <form className="app__loginHome">
+          <Button onClick={() => setOpen(true)}>Login</Button>
+          <Button onClick={() => setRegisterOpen(true)}>Sign Up</Button>
+        </form>
+      )}
       {posts.map(({ id, post }) => (
         <Post
           key={id}
