@@ -176,6 +176,15 @@ function App() {
           caption={post.caption}
         />
       ))}
+      {user?.displayName ? (
+        <div className="app__upload">
+          <ImageUpload username={user.displayName} />
+        </div>
+      ) : (
+        <center>
+          <h3>Login to upload</h3>
+        </center>
+      )}
     </div>
   );
 }
